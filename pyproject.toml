@@ -1,0 +1,35 @@
+[project]
+name = "enterprise-it-support-agentic-rag-copilot"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Riyas Bulayalam", email = "abdulshihab6493@gmail.com" }
+]
+requires-python = ">=3.15"
+dependencies = [
+    "fastapi==0.116.1",
+    "jinja2==3.1.6",
+    "langchain-community==0.4.2",
+    "langchain-core==1.6.1",
+    "langchain-openai==1.6.0",
+    "langchain-pinecone==0.2.13",
+    "langchain-tavily==0.2.18",
+    "langchain-text-splitters==1.1.2",
+    "langgraph==1.1.10",
+    "openai==3.3.1",
+    "pinecone==7.3.0",
+    "pydantic-settings==2.10.1",
+    "pypdf==6.16.2",
+    "python-docx==1.2.0",
+    "python-dotenv==1.1.1",
+    "python-multipart==0.0.20",
+    "uvicorn[standard]==0.35.0",
+]
+
+[project.scripts]
+enterprise-it-support-agentic-rag-copilot = "enterprise_it_support_agentic_rag_copilot:main"
+
+[build-system]
+requires = ["uv_build>=0.12.17,<0.13.0"]
+build-backend = "uv_build"
