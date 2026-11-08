@@ -8,11 +8,13 @@ class Settings(BaseSettings):
     app_name: str = "Enterprise IT Support Agentic RAG Copilot"
     app_env: str = "development"
     openai_api_key: str = ""
+    openrouter_api_key: str = ""
     tavily_api_key: str = ""
     pinecone_api_key: str = ""
     pinecone_index_name: str = "fde-it-support-rag"
     pinecone_namespace: str = "company-it-kb"
-    embedding_model: str = "text-embedding-3-small"
+    #embedding_model: str = "text-embedding-3-small"
+    embedding_model: str = "liquid/lfm-2.5-embedding-350m:free"
     openrouter_model: str = "openrouter/free"
     top_k: int = 4
     max_retries: int = 1
