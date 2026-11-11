@@ -25,5 +25,6 @@ def load_file(path: Path) -> list[Document]:
 
 
 def chunk_documents(docs: Iterable[Document]) -> list[Document]:
-    splitter = RecursiveCharacterTextSplitter(chunk_size=900, chunk_overlap=120, add_start_index=True)
+    # splitter = RecursiveCharacterTextSplitter(chunk_size=900, chunk_overlap=120, add_start_index=True)
+    splitter = RecursiveCharacterTextSplitter(chunk_size=1400, chunk_overlap=200, add_start_index=True)
     return splitter.split_documents(list(docs))

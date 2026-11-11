@@ -1,24 +1,59 @@
 import time
-from pinecone import Pinecone , ServerlessSpec
-from langchain_openai import OpenAIEmbeddings
+import requests
+from pinecone import Pinecone, ServerlessSpec
+from langchain_core.embeddings import Embeddings
 from langchain_pinecone import PineconeVectorStore
 from app.core.config import get_settings
 
 settings = get_settings()
 
-
 _embeddings = None
 _vectorstore = None
 
-
 EMBEDDING_DIMENSIONS = {
-    "text-embedding-3-small": 1536,
-    "text-embedding-3-large": 3072,
-    "text-embedding-ada-002": 1536,
     "all-minilm-l6-v2": 384,
-    "liquid/lfm-2.5-embedding-350m:free": 1024
+    "liquid/lfm-2.5-embedding-350m:free": 1024,
 }
 
+
+class OpenRouterEmbeddings(Embeddings):
+    """Turns text into number lists (embeddings) using OpenRouter."""
+
+    def __init__(self, model: str, api_key: str, batch_size: int = 16):
+        self.model = model
+        self.api_key = api_key
+        self.batch_size = batch_size
+        self.url = "https://openrouter.ai/api/v1/embeddings"
+
+    def _embed(self, texts: list[str]) -> list[list[float]]:
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+        for attempt in range(4):
+            response = requests.post(
+                self.url,
+                headers=headers,
+                json={"model": self.model, "input": texts},
+                timeout=60,
+            )
+            if response.status_code == 429:  # free model busy, wait and retry
+                time.sleep(2 * (attempt + 1))
+                continue
+            response.raise_for_status()
+            data = sorted(response.json()["data"], key=lambda d: d["index"])
+            #return [item["embedding"] for item in data]
+            return [[float(x) for x in item["embedding"]] for item in data]
+        raise RuntimeError("OpenRouter rate limit: too many requests, try again soon")
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        results = []
+        for i in range(0, len(texts), self.batch_size):
+            results.extend(self._embed(texts[i:i + self.batch_size]))
+        return results
+
+    def embed_query(self, text: str) -> list[float]:
+        return self._embed([text])[0]
 
 
 def get_embedding_dimension(model_name: str | None = None) -> int:
@@ -29,45 +64,25 @@ def get_embedding_dimension(model_name: str | None = None) -> int:
     normalized = name.lower()
     if normalized in EMBEDDING_DIMENSIONS:
         return EMBEDDING_DIMENSIONS[normalized]
-    if "text-embedding-3-small" in normalized:
-        return 1536
-    if "text-embedding-3-large" in normalized:
-        return 3072
-    if "text-embedding-ada-002" in normalized:
-        return 1536
     if "all-minilm" in normalized:
         return 384
 
     raise ValueError(
-        f"Unsupported embedding model '{model_name or settings.embedding_model}' for Pinecone. "
+        f"Unsupported embedding model '{name}' for Pinecone. "
         "Add the matching dimension to EMBEDDING_DIMENSIONS."
     )
 
 
-
-# def get_embeddings():
-#     global _embeddings
-#     if _embeddings is None:
-#         if not settings.openai_api_key:
-#             raise RuntimeError("OPENAI_API_KEY is missing")
-#         _embeddings = OpenAIEmbeddings(
-#             model=settings.embedding_model,
-#             api_key=settings.openai_api_key,
-#         )
-#     return _embeddings
 def get_embeddings():
     global _embeddings
     if _embeddings is None:
         if not settings.openrouter_api_key:
             raise RuntimeError("OPENROUTER_API_KEY is missing")
-        _embeddings = OpenAIEmbeddings(
+        _embeddings = OpenRouterEmbeddings(
             model=settings.embedding_model,
             api_key=settings.openrouter_api_key,
-            base_url="https://openrouter.ai/api/v1",
-            check_embedding_ctx_length=False,
         )
     return _embeddings
-
 
 
 def ensure_index():
@@ -102,9 +117,6 @@ def ensure_index():
     return pc.Index(settings.pinecone_index_name)
 
 
-
-
-
 def get_vectorstore():
     global _vectorstore
     if _vectorstore is None:
@@ -117,10 +129,8 @@ def get_vectorstore():
     return _vectorstore
 
 
-
 def get_retriever():
     return get_vectorstore().as_retriever(search_kwargs={"k": settings.top_k})
-
 
 
 def add_documents(chunks):
