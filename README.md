@@ -1,13 +1,13 @@
 # Enterprise IT Support Agentic RAG Copilot
 
-An end-to-end **Forward Deployed Engineer (FDE) project** that turns a notebook-style Agentic RAG workflow into a deployable internal product using **LangGraph, FastAPI, Pinecone, Groq, Tavily, HTML, CSS, and JavaScript**.
+An end-to-end **Forward Deployed Engineer (FDE) project** that turns a notebook-style Agentic RAG workflow into a deployable internal product using **LangGraph, FastAPI, Pinecone, OpenRouter, Tavily, HTML, CSS, and JavaScript**.
 
 ---
 
 ## 1. Business Problem
 
 ### Customer
-**NovaRetail**, a fictional 3,000-employee retail company.
+**Teleperformance**, a Global Digital Business Services and Customer Experience Managment Company.
 
 ### Problem
 The internal IT team maintains many documents: VPN instructions, password rules, MFA policy, software installation rules, laptop troubleshooting guides, and service-desk runbooks.
@@ -110,10 +110,10 @@ This repository demonstrates each layer.
                │                             │
                └──────────────┬──────────────┘
                               ▼
-                     ┌────────────────┐
-                     │ Groq LLM       │
-                     │ Grounded Answer│
-                     └────────────────┘
+                     ┌─────────────────────┐
+                     │   OpenRouter LLM    │
+                     │   Grounded Answer   │
+                     └─────────────────────┘
 ```
 
 ---
@@ -185,8 +185,8 @@ The system therefore controls **what to do next** based on its current state.
 | Layer | Technology | Purpose |
 |---|---|---|
 | Agent workflow | LangGraph | Stateful routing and conditional decisions |
-| LLM | Groq | Routing, grading, rewriting, answer generation |
-| Embeddings | HuggingFace `all-MiniLM-L6-v2` | Local 384-dimensional embeddings |
+| LLM | OpenRouter | Routing, grading, rewriting, answer generation |
+| Embeddings | OpenRouter `liquid/lfm-2.5-embedding-350m:free` | Local 384-dimensional embeddings |
 | Vector DB | Pinecone | Private enterprise knowledge base |
 | External search | Tavily | Fallback when company KB is insufficient |
 | API | FastAPI | Backend and REST endpoints |
@@ -278,8 +278,7 @@ Create a `.env` file in the project root directory with the following variables:
 
 ```env
 # LLM API Keys
-GROQ_API_KEY=your_groq_api_key_here
-OPENAI_API_KEY=your_openai_api_key_here
+OPENROUTER_API_KEY=your_groq_api_key_here
 
 # External Search
 TAVILY_API_KEY=your_tavily_api_key_here
@@ -290,9 +289,8 @@ PINECONE_INDEX_NAME=fde-it-support-rag
 PINECONE_NAMESPACE=company-it-kb
 
 # LLM Models
-GROQ_MODEL=openai/gpt-oss-20b
-OPENAI_MODEL=gpt-4o-mini
-EMBEDDING_MODEL=text-embedding-3-small
+OPENROUTER_MODEL=openrouter/free
+EMBEDDING_MODEL=liquid/lfm-2.5-embedding-350m:free
 
 # Security
 ADMIN_API_KEY=change-me-in-production
@@ -305,15 +303,13 @@ APP_ENV=development
 
 | Variable | Description | Example | Required |
 |---|---|---|---|
-| `GROQ_API_KEY` | API key for Groq LLM (routing, grading, generation) | `gsk_...` | ✅ Yes |
-| `OPENAI_API_KEY` | API key for OpenAI (embeddings and fallback LLM) | `sk-...` | ✅ Yes |
+| `OPENROUTER_API_KEY` | API key for Groq LLM (routing, grading, generation) | `gsk_...` | ✅ Yes |
 | `TAVILY_API_KEY` | API key for Tavily web search | `tvly-...` | ✅ Yes |
 | `PINECONE_API_KEY` | API key for Pinecone vector database | `pckey-...` | ✅ Yes |
 | `PINECONE_INDEX_NAME` | Pinecone index name | `fde-it-support-rag` | ⚠️ Optional (default: `fde-it-support-rag`) |
 | `PINECONE_NAMESPACE` | Pinecone namespace for document isolation | `company-it-kb` | ⚠️ Optional (default: `company-it-kb`) |
-| `GROQ_MODEL` | Groq model identifier | `openai/gpt-oss-20b` | ⚠️ Optional (default: `openai/gpt-oss-20b`) |
-| `OPENAI_MODEL` | OpenAI model identifier | `gpt-4o-mini` | ⚠️ Optional (default: `gpt-4o-mini`) |
-| `EMBEDDING_MODEL` | Embedding model for vectorization | `text-embedding-3-small` | ⚠️ Optional (default: `text-embedding-3-small`) |
+| `OPENROUTER_MODEL` | Openrouter model identifier | `openai/gpt-oss-20b` | ⚠️ Optional (default: `openrouter/free`) |
+| `EMBEDDING_MODEL` | Embedding model for vectorization | `liquid/lfm-2.5-embedding-350m:free` | ⚠️ Optional (default: `liquid/lfm-2.5-embedding-350m:free`) |
 | `ADMIN_API_KEY` | Secret key for admin endpoints (document ingestion) | `your-secure-key` | ⚠️ Optional (default: `change-me`) |
 | `APP_ENV` | Application environment | `development` or `production` | ⚠️ Optional (default: `development`) |
 
@@ -339,7 +335,7 @@ Load Documents
    ↓
 Chunk Text
    ↓
-HuggingFace Embeddings
+OpenRouter Embeddings
    ↓
 Pinecone Vector Database
 ```
